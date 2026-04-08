@@ -1,0 +1,8 @@
+{
+  "name": "backoffice-command-center",
+  "private": true,
+  "description": "Toast-inspired backoffice/admin dashboard with live API support and offline demo fallback.",
+  "scripts": {
+    "start": "powershell -NoProfile -Command \"python -m http.server 4173\""
+  }
+}
