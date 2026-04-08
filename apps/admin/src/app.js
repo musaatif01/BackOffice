@@ -122,6 +122,7 @@ const DEMO_DATA = {
 const state = {
   page: "overview",
   mode: "live",
+  demo: structuredClone(DEMO_DATA),
   live: { ...EMPTY_DATA },
   lastUpdated: null,
   error: null,
@@ -182,7 +183,24 @@ function getCategoryName(categories, categoryId) {
 }
 
 function getCurrentData() {
-  return state.mode === "demo" ? DEMO_DATA : state.live;
+  return state.mode === "demo" ? state.demo : state.live;
+}
+
+function updateCurrentData(updater) {
+  if (state.mode === "demo") {
+    state.demo = updater(structuredClone(state.demo));
+    return;
+  }
+
+  state.live = updater(structuredClone(state.live));
+}
+
+function productOptions(item) {
+  return item.options ?? [];
+}
+
+function createId(prefix) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function buildAnalytics(data) {
@@ -484,6 +502,57 @@ function renderMenu(analytics) {
   return `
     <section class="panel page-panel">
       <div class="panel-title"><div><div class="panel-kicker">Catalog</div><h3>Menu library</h3></div><div class="lane-badges">${badge(`${analytics.categories.length} categories`)}${badge(`${analytics.items.length} items`)}${badge(`${analytics.soldOutItems.length} sold out`, analytics.soldOutItems.length ? "warn" : "good")}</div></div>
+      <div class="content-grid narrow-grid">
+        <form class="editor-card" data-form="add-product">
+          <div>
+            <div class="panel-kicker">Create product</div>
+            <h3>Add a new menu item</h3>
+          </div>
+          <label class="field">
+            <span>Name</span>
+            <input name="name" type="text" placeholder="Chicken Deluxe" required />
+          </label>
+          <label class="field">
+            <span>Category</span>
+            <select name="categoryId" required>
+              <option value="">Select category</option>
+              ${analytics.categories.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name?.["en-GB"] ?? category.id)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="field">
+            <span>Price</span>
+            <input name="price" type="number" min="0" step="0.01" placeholder="9.99" required />
+          </label>
+          <label class="field checkbox-field">
+            <input name="soldOut" type="checkbox" />
+            <span>Start as sold out</span>
+          </label>
+          <button class="button primary" type="submit">Add product</button>
+        </form>
+
+        <form class="editor-card" data-form="add-option">
+          <div>
+            <div class="panel-kicker">Attach option</div>
+            <h3>Add an option to a product</h3>
+          </div>
+          <label class="field">
+            <span>Product</span>
+            <select name="itemId" required>
+              <option value="">Select product</option>
+              ${analytics.items.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name?.["en-GB"] ?? item.id)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="field">
+            <span>Option name</span>
+            <input name="optionName" type="text" placeholder="Extra Cheese" required />
+          </label>
+          <label class="field">
+            <span>Price delta</span>
+            <input name="priceDelta" type="number" min="0" step="0.01" placeholder="1.50" required />
+          </label>
+          <button class="button primary" type="submit">Add option</button>
+        </form>
+      </div>
       ${analytics.items.length ? `
         <div class="card-grid">
           ${analytics.items.map((item) => `
@@ -496,6 +565,16 @@ function renderMenu(analytics) {
                 ${badge(currency(item.price))}
                 ${(item.tags ?? []).map((tag) => badge(tag)).join("")}
               </div>
+              ${productOptions(item).length ? `
+                <div class="option-list">
+                  ${productOptions(item).map((option) => `
+                    <div class="option-row">
+                      <span>${escapeHtml(option.name)}</span>
+                      <strong>+${currency(option.priceDelta)}</strong>
+                    </div>
+                  `).join("")}
+                </div>
+              ` : `<div class="inline-note">No options added yet.</div>`}
             </article>
           `).join("")}
         </div>
@@ -721,6 +800,74 @@ function bindEvents() {
     button.addEventListener("click", () => {
       void loadLiveData(true);
     });
+  });
+
+  document.querySelector("[data-form='add-product']")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const name = String(form.get("name") ?? "").trim();
+    const categoryId = String(form.get("categoryId") ?? "").trim();
+    const price = Number(form.get("price") ?? 0);
+    const soldOut = form.get("soldOut") === "on";
+
+    if (!name || !categoryId || Number.isNaN(price)) {
+      return;
+    }
+
+    updateCurrentData((data) => {
+      data.items = [
+        ...data.items,
+        {
+          id: createId("item"),
+          categoryId,
+          name: { "en-GB": name },
+          price,
+          soldOut,
+          tags: ["Custom"],
+          options: []
+        }
+      ];
+      return data;
+    });
+
+    event.currentTarget.reset();
+    renderApp();
+  });
+
+  document.querySelector("[data-form='add-option']")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const itemId = String(form.get("itemId") ?? "").trim();
+    const optionName = String(form.get("optionName") ?? "").trim();
+    const priceDelta = Number(form.get("priceDelta") ?? 0);
+
+    if (!itemId || !optionName || Number.isNaN(priceDelta)) {
+      return;
+    }
+
+    updateCurrentData((data) => {
+      data.items = data.items.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        return {
+          ...item,
+          options: [
+            ...productOptions(item),
+            {
+              id: createId("opt"),
+              name: optionName,
+              priceDelta
+            }
+          ]
+        };
+      });
+      return data;
+    });
+
+    event.currentTarget.reset();
+    renderApp();
   });
 }
 

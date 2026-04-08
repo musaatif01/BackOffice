@@ -502,6 +502,65 @@ textarea {
   gap: 14px;
 }
 
+.editor-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 250, 244, 0.96), rgba(246, 220, 198, 0.56));
+  border: 1px solid rgba(208, 107, 45, 0.18);
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(42, 35, 28, 0.12);
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--heading);
+}
+
+.checkbox-field {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.option-list {
+  display: grid;
+  gap: 8px;
+  border-top: 1px dashed rgba(42, 35, 28, 0.12);
+  padding-top: 12px;
+}
+
+.option-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.inline-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .signal-title,
 .availability-name,
 .lane-row strong:first-child {
